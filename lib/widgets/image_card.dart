@@ -4,14 +4,23 @@ import 'image_details_dialog.dart';
 
 class ImageCard extends StatelessWidget {
   final ImageItem image;
+  final Function(String) onTagSelected;
 
-  const ImageCard({super.key, required this.image});
+  const ImageCard({
+    super.key,
+    required this.image,
+    required this.onTagSelected,
+  });
 
-  void _showDetails(BuildContext context) {
-    showDialog(
+  Future<void> _showDetails(BuildContext context) async {
+    final selectedTag = await showDialog<String>(
       context: context,
       builder: (context) => ImageDetailsDialog(image: image),
     );
+
+    if (selectedTag != null && selectedTag.isNotEmpty) {
+      onTagSelected(selectedTag);
+    }
   }
 
   @override

@@ -110,10 +110,16 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
                 Wrap(
                   spacing: 8.0,
                   runSpacing: 4.0,
-                  children: widget.image.title
-                      .split(',')
-                      .map((tag) => Chip(label: Text(tag.trim())))
-                      .toList(),
+                  children: widget.image.title.split(',').map((tag) {
+                    final trimmedTag = tag.trim();
+                    return ActionChip(
+                      label: Text(trimmedTag),
+                      onPressed: () {
+                        // Pop the dialog and return the selected tag
+                        Navigator.of(context).pop(trimmedTag);
+                      },
+                    );
+                  }).toList(),
                 ),
               ],
             ),

@@ -46,6 +46,14 @@ class _ImageScreenState extends State<ImageScreen> {
     await viewModel.refresh();
   }
 
+  void _onTagSelected(String tag) {
+    setState(() {
+      _isSearching = true;
+      _searchController.text = tag;
+    });
+    Provider.of<ImageViewModel>(context, listen: false).search(tag);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -117,7 +125,10 @@ class _ImageScreenState extends State<ImageScreen> {
               ),
               itemCount: viewModel.images.length,
               itemBuilder: (context, index) {
-                return ImageCard(image: viewModel.images[index]);
+                return ImageCard(
+                  image: viewModel.images[index],
+                  onTagSelected: _onTagSelected, // Pass the handler here
+                );
               },
             );
           },
