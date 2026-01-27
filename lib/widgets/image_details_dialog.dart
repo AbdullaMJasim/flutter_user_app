@@ -1,4 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:dio/dio.dart';
 import '../models/image_item.dart';
 
 class ImageDetailsDialog extends StatefulWidget {
@@ -11,8 +15,15 @@ class ImageDetailsDialog extends StatefulWidget {
 }
 
 class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
+  final GlobalKey _imageKey = GlobalKey();
   bool _isImageLoaded = false;
   bool _dependenciesInitialized = false;
+  double _downloadProgress = 0.0;
+  bool _isDownloading = false;
+
+  // State for the floating download button
+  bool _showDownloadButton = false;
+  Offset _longPressPosition = Offset.zero;
 
   @override
   void didChangeDependencies() {
@@ -29,6 +40,61 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
     }
   }
 
+  Future<void> _downloadImage() async {
+    final isGranted = await Permission.photos.status.isGranted;
+
+    if (isGranted) {
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress = 0.0;
+        _showDownloadButton = false; // Hide button once download starts
+      });
+
+      try {
+        final dio = Dio();
+        final response = await dio.get(
+          widget.image.url,
+          onReceiveProgress: (received, total) {
+            if (total != -1) {
+              setState(() {
+                _downloadProgress = received / total;
+              });
+            }
+          },
+          options: Options(responseType: ResponseType.bytes),
+        );
+
+        await Gal.putImageBytes(Uint8List.fromList(response.data));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image saved to gallery')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving image: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+          });
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Photo library permission is required. Please enable it in settings.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -42,7 +108,6 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
 
   Widget _buildSkeleton() {
     final theme = Theme.of(context);
-    // A static skeleton that mimics the final layout without any animation.
     return SingleChildScrollView(
       key: const ValueKey('skeleton'),
       child: Column(
@@ -87,15 +152,93 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
   }
 
   Widget _buildContentLoaded() {
+    final theme = Theme.of(context);
+
+    Widget downloadButton = const SizedBox.shrink();
+    if (_showDownloadButton) {
+      final RenderBox? imageBox =
+          _imageKey.currentContext?.findRenderObject() as RenderBox?;
+      if (imageBox != null && imageBox.hasSize) {
+        final imageSize = imageBox.size;
+        const double buttonRadius = 28.0;
+        const double buttonDiameter = buttonRadius * 2;
+        const double offset = 20.0; // Distance from the press point
+
+        final bool isNearTop = _longPressPosition.dy < (imageSize.height / 2);
+
+        final double top = isNearTop
+            ? _longPressPosition.dy + offset
+            : _longPressPosition.dy - buttonDiameter - offset;
+
+        final double left = (_longPressPosition.dx - buttonRadius)
+            .clamp(0.0, imageSize.width - buttonDiameter);
+
+        downloadButton = Positioned(
+          top: top,
+          left: left,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+              border: Border.all(
+                color: theme.colorScheme.outline,
+                width: 1.5,
+              ),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.download_rounded,
+                  color: theme.colorScheme.onTertiaryContainer),
+              onPressed: _downloadImage,
+            ),
+          ),
+        );
+      }
+    }
+
     return SingleChildScrollView(
       key: const ValueKey('content'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Image.network(
-            widget.image.url,
-            fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () {
+              if (_showDownloadButton) {
+                setState(() {
+                  _showDownloadButton = false;
+                });
+              }
+            },
+            onLongPressStart: (details) {
+              setState(() {
+                _longPressPosition = details.localPosition;
+                _showDownloadButton = true;
+              });
+            },
+            child: Stack(
+              children: [
+                Image.network(
+                  key: _imageKey, // Assign the key to the image
+                  widget.image.url,
+                  fit: BoxFit.cover,
+                ),
+                if (_isDownloading)
+                  Positioned.fill(
+                    child: Container(
+                      color: theme.colorScheme.scrim.withOpacity(0.5),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: _downloadProgress,
+                          backgroundColor:
+                              theme.colorScheme.surface.withOpacity(0.5),
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                downloadButton, // Add the dynamically positioned button
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -104,7 +247,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
               children: [
                 Text(
                   'Tags',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: theme.textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8.0),
                 Wrap(
@@ -115,7 +258,6 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
                     return ActionChip(
                       label: Text(trimmedTag),
                       onPressed: () {
-                        // Pop the dialog and return the selected tag
                         Navigator.of(context).pop(trimmedTag);
                       },
                     );

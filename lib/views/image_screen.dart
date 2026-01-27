@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../view_models/image_view_model.dart';
 import '../view_models/auth_view_model.dart';
 import '../widgets/image_card.dart';
@@ -21,7 +22,13 @@ class _ImageScreenState extends State<ImageScreen> {
     super.initState();
     final viewModel = Provider.of<ImageViewModel>(context, listen: false);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Correctly check the permission status before requesting.
+      final status = await Permission.photos.status;
+      if (status.isDenied) {
+        await Permission.photos.request();
+      }
+
       if (viewModel.images.isEmpty) {
         viewModel.fetchImages();
       }
