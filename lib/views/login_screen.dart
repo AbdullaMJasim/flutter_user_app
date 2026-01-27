@@ -55,6 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
             else ...[
               ElevatedButton(
                 onPressed: () async {
+                  //Hide any stale snackbar before starting.
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
                   final email = _emailController.text.trim();
                   final password = _passwordController.text.trim();
                   if (email.isEmpty || password.isEmpty) {
@@ -79,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16.0),
               ElevatedButton.icon(
                 onPressed: () async {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   try {
                     await authViewModel.signInWithGoogle();
                   } on AuthException catch (e) {
