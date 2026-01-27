@@ -1,42 +1,50 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+// Custom exception for authentication errors that can be shown to the user.
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  // Stream for auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Get current user
   User? get currentUser => _auth.currentUser;
 
-  // Sign in with email and password
-  Future<UserCredential?> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> signInWithEmailAndPassword(
+      String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
-    } catch (e) {
-      print(e);
-      return null;
+      return await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      // Re-throw a user-friendly exception.
+      throw AuthException('Login failed: ${e.message}');
     }
   }
 
-  // Sign up with email and password
-  Future<UserCredential?> signUpWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> signUpWithEmailAndPassword(
+      String email, String password) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    } catch (e) {
-      print(e);
-      return null;
+      return await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException('Sign-up failed: ${e.message}');
     }
   }
 
-  // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        // The user canceled the sign-in
+        // The user canceled the sign-in. This is not an error.
+        // Return null and let the ViewModel handle it gracefully.
         return null;
       }
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -45,13 +53,14 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
       return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException('Google Sign-In failed: ${e.message}');
     } catch (e) {
-      print(e);
-      return null;
+      // Catch other potential errors (e.g., network issues)
+      throw AuthException('An unexpected error occurred during Google Sign-In.');
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();

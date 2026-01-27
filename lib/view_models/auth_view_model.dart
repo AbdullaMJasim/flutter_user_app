@@ -18,31 +18,45 @@ class AuthViewModel extends ChangeNotifier {
     });
   }
 
-  Future<bool> signInWithEmailAndPassword(String email, String password) async {
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
     _isLoading = true;
     notifyListeners();
-    final userCredential = await _authService.signInWithEmailAndPassword(email, password);
-    _isLoading = false;
-    notifyListeners();
-    return userCredential != null;
+    try {
+      await _authService.signInWithEmailAndPassword(email, password);
+    } on AuthException {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<bool> signUpWithEmailAndPassword(String email, String password) async {
+  Future<void> signUpWithEmailAndPassword(String email, String password) async {
     _isLoading = true;
     notifyListeners();
-    final userCredential = await _authService.signUpWithEmailAndPassword(email, password);
-    _isLoading = false;
-    notifyListeners();
-    return userCredential != null;
+    try {
+      await _authService.signUpWithEmailAndPassword(email, password);
+    } on AuthException {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<void> signInWithGoogle() async {
     _isLoading = true;
     notifyListeners();
-    final userCredential = await _authService.signInWithGoogle();
-    _isLoading = false;
-    notifyListeners();
-    return userCredential != null;
+    try {
+      // The service now handles cancellation gracefully.
+      // A real failure will throw an AuthException, which we re-throw to the UI.
+      await _authService.signInWithGoogle();
+    } on AuthException {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> signOut() async {

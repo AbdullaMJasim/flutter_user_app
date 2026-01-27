@@ -13,14 +13,14 @@ class AuthWrapper extends StatelessWidget {
     final authViewModel = Provider.of<AuthViewModel>(context);
 
     if (authViewModel.user != null) {
-      // If the user is logged in, provide an ImageViewModel and show the ImageScreen.
+      // If the user is logged in, provide a fresh ImageViewModel and show the ImageScreen.
       return ChangeNotifierProvider(
         create: (_) => ImageViewModel(),
-        child: const ImageScreen(), // Keeping this const is fine, as the provider above it changes.
+        child: const ImageScreen(),
       );
     } else {
       // If the user is not logged in, show the LoginScreen.
-      return const LoginScreen(); // This should also be non-const if it has state issues.
+      return const LoginScreen();
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_models/auth_view_model.dart';
+import '../services/auth_service.dart'; // Import AuthException
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     if (mounted) {
+      // Clear any previous snackbar before showing a new one.
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
@@ -59,15 +62,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     return;
                   }
 
-                  bool success;
-                  if (_isLogin) {
-                    success = await authViewModel.signInWithEmailAndPassword(email, password);
-                  } else {
-                    success = await authViewModel.signUpWithEmailAndPassword(email, password);
-                  }
-
-                  if (!success) {
-                    _showError('Authentication failed.');
+                  try {
+                    if (_isLogin) {
+                      await authViewModel.signInWithEmailAndPassword(
+                          email, password);
+                    } else {
+                      await authViewModel.signUpWithEmailAndPassword(
+                          email, password);
+                    }
+                  } on AuthException catch (e) {
+                    _showError(e.message);
                   }
                 },
                 child: Text(_isLogin ? 'Login' : 'Sign Up'),
@@ -75,9 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16.0),
               ElevatedButton.icon(
                 onPressed: () async {
-                  final success = await authViewModel.signInWithGoogle();
-                  if (!success) {
-                    _showError('Google Sign-In failed.');
+                  try {
+                    await authViewModel.signInWithGoogle();
+                  } on AuthException catch (e) {
+                    _showError(e.message);
                   }
                 },
                 icon: const Icon(Icons.login),
@@ -89,7 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     _isLogin = !_isLogin;
                   });
                 },
-                child: Text(_isLogin ? 'Create an account' : 'Have an account? Login'),
+                child: Text(
+                    _isLogin ? 'Create an account' : 'Have an account? Login'),
               ),
             ],
           ],
