@@ -13,13 +13,14 @@ class ImageScreen extends StatefulWidget {
 
 class _ImageScreenState extends State<ImageScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     final viewModel = Provider.of<ImageViewModel>(context, listen: false);
 
-    // Fetch images after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (viewModel.images.isEmpty) {
         viewModel.fetchImages();
@@ -36,6 +37,7 @@ class _ImageScreenState extends State<ImageScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -47,18 +49,52 @@ class _ImageScreenState extends State<ImageScreen> {
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final imageViewModel = Provider.of<ImageViewModel>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Images'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              authViewModel.signOut();
-            },
-          ),
-        ],
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search images...',
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (query) {
+                  imageViewModel.search(query);
+                },
+              )
+            : const Text('Images'),
+        actions: _isSearching
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = false;
+                      _searchController.clear();
+                      imageViewModel.search('');
+                    });
+                  },
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = true;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () {
+                    authViewModel.signOut();
+                  },
+                ),
+              ],
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,

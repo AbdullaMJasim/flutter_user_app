@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import '../models/image_item.dart';
+import 'image_details_dialog.dart';
 
 class ImageCard extends StatelessWidget {
   final ImageItem image;
 
   const ImageCard({super.key, required this.image});
 
+  void _showDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => ImageDetailsDialog(image: image),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Column(
-        children: [
-          Expanded(
-            child: Image.network(
-              image.thumbnailUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(image.title, overflow: TextOverflow.ellipsis),
-          ),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showDetails(context),
+        child: Image.network(
+          image.thumbnailUrl,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ class ImageViewModel extends ChangeNotifier {
   bool _isLoading = false;
   int _page = 1;
   bool _hasMoreImages = true;
+  String _currentQuery = '';
 
   List<ImageItem> get images => _images;
   bool get isLoading => _isLoading;
@@ -19,7 +20,7 @@ class ImageViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final newImages = await _apiService.fetchImages(page: _page);
+      final newImages = await _apiService.fetchImages(page: _page, query: _currentQuery);
 
       if (newImages.isNotEmpty) {
         _images.addAll(newImages);
@@ -33,6 +34,14 @@ class ImageViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> search(String query) async {
+    _currentQuery = query;
+    _images.clear();
+    _page = 1;
+    _hasMoreImages = true;
+    await fetchImages();
   }
 
   Future<void> refresh() async {
