@@ -47,17 +47,29 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> signInWithGoogle() async {
     _isLoading = true;
     notifyListeners();
+
     try {
-      // The service now handles cancellation gracefully.
-      // A real failure will throw an AuthException, which we re-throw to the UI.
-      await _authService.signInWithGoogle();
+      final user = await _authService.signInWithGoogle(); // returns User? or null
+
+      if (user == null) {
+        // Only throw if the user is actually null (login failed)
+        throw AuthException('Google authentication failed');
+      }
+
+
     } on AuthException {
       rethrow;
+    } catch (e, st) {
+      // Catch any other exceptions (PlatformException, FirebaseAuthException)
+      print('Google sign-in error: $e\n$st');
+      // Decide if you want to show the error to the user
+      throw AuthException('Google authentication failed');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
 
   Future<void> signOut() async {
     await _authService.signOut();
