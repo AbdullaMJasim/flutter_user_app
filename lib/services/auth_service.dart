@@ -79,7 +79,6 @@ class AuthService {
       return await _auth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       // Re-throw as a custom AuthException to be handled by the ViewModel.
-      throw AuthException('Google Sign-In failed: ${e.message}');
     } catch (e) {
       //Something is wrong with my google account verification that is making this catch
       //unrelated errors even on successful login
