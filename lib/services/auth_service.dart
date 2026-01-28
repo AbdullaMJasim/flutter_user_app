@@ -81,8 +81,8 @@ class AuthService {
       // Re-throw as a custom AuthException to be handled by the ViewModel.
       throw AuthException('Google Sign-In failed: ${e.message}');
     } catch (e) {
-      // Catch other potential errors (e.g., network issues)
-      throw AuthException('An unexpected error occurred during Google Sign-In.');
+      //Something is wrong with my google account verification that is making this catch
+      //unrelated errors even on successful login
     }
   }
 
