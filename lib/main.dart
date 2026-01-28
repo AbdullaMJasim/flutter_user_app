@@ -4,7 +4,6 @@ import 'view_models/auth_view_model.dart';
 import 'views/auth_wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'core/theme/util.dart';
 import 'core/theme/theme.dart'; // Import your new theme file
 
 void main() async {

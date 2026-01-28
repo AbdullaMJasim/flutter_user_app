@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:dio/dio.dart';
 import '../models/image_item.dart';
 
+/// A dialog that displays a high-resolution image, its tags, and allows downloading.
 class ImageDetailsDialog extends StatefulWidget {
   final ImageItem image;
 
@@ -15,16 +16,20 @@ class ImageDetailsDialog extends StatefulWidget {
 }
 
 class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
+  // A global key to access the image widget's context for positioning.
   final GlobalKey _imageKey = GlobalKey();
+
+  // State flags to manage the UI.
   bool _isImageLoaded = false;
   bool _dependenciesInitialized = false;
   double _downloadProgress = 0.0;
   bool _isDownloading = false;
 
-  // State for the floating download button
+  // State for the floating download button that appears on long-press.
   bool _showDownloadButton = false;
   Offset _longPressPosition = Offset.zero;
 
+  /// Pre-caches the high-resolution image to avoid a flicker when it loads.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -40,6 +45,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
     }
   }
 
+  /// Downloads the image and saves it to the device's gallery.
   Future<void> _downloadImage() async {
     final isGranted = await Permission.photos.status.isGranted;
 
@@ -51,6 +57,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
       });
 
       try {
+        // Use Dio for more advanced networking, like progress tracking.
         final dio = Dio();
         final response = await dio.get(
           widget.image.url,
@@ -85,6 +92,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
         }
       }
     } else {
+      // Inform the user if permission is required.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -97,6 +105,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Use an AnimatedSwitcher to smoothly transition between the skeleton and the content.
     return Dialog(
       clipBehavior: Clip.antiAlias,
       child: AnimatedSwitcher(
@@ -106,6 +115,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
     );
   }
 
+  /// Builds a skeleton UI to show while the image is loading.
   Widget _buildSkeleton() {
     final theme = Theme.of(context);
     return SingleChildScrollView(
@@ -151,6 +161,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
     );
   }
 
+  /// Builds the main content of the dialog once the image is loaded.
   Widget _buildContentLoaded() {
     final theme = Theme.of(context);
 
@@ -159,6 +170,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
       final RenderBox? imageBox =
           _imageKey.currentContext?.findRenderObject() as RenderBox?;
       if (imageBox != null && imageBox.hasSize) {
+        // Logic to position the download button near the long-press position.
         final imageSize = imageBox.size;
         const double buttonRadius = 28.0;
         const double buttonDiameter = buttonRadius * 2;
@@ -203,6 +215,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
         children: [
           GestureDetector(
             onTap: () {
+              // Hide the download button if the user taps elsewhere on the image.
               if (_showDownloadButton) {
                 setState(() {
                   _showDownloadButton = false;
@@ -210,6 +223,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
               }
             },
             onLongPressStart: (details) {
+              // Show the download button at the long-press location.
               setState(() {
                 _longPressPosition = details.localPosition;
                 _showDownloadButton = true;
@@ -222,6 +236,7 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
                   widget.image.url,
                   fit: BoxFit.cover,
                 ),
+                // Show a download progress indicator.
                 if (_isDownloading)
                   Positioned.fill(
                     child: Container(
@@ -255,6 +270,8 @@ class _ImageDetailsDialogState extends State<ImageDetailsDialog> {
                   runSpacing: 4.0,
                   children: widget.image.title.split(',').map((tag) {
                     final trimmedTag = tag.trim();
+                    // ActionChips allow the user to select a tag, which closes the
+                    // dialog and returns the selected tag to the caller.
                     return ActionChip(
                       label: Text(trimmedTag),
                       onPressed: () {

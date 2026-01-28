@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import 'package:google_fonts/google_fonts.dart';
 
 class MaterialTheme {
   final TextTheme textTheme;
@@ -385,9 +386,7 @@ class MaterialTheme {
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
+            shape: RoundedRectangle.circular(8.0),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
@@ -442,4 +441,21 @@ class ColorFamily {
   final Color onColor;
   final Color colorContainer;
   final Color onColorContainer;
+}
+
+TextTheme createTextTheme(
+    BuildContext context, String bodyFontString, String displayFontString) {
+  TextTheme baseTextTheme = Theme.of(context).textTheme;
+  TextTheme bodyTextTheme = GoogleFonts.getTextTheme(bodyFontString, baseTextTheme);
+  TextTheme displayTextTheme =
+      GoogleFonts.getTextTheme(displayFontString, baseTextTheme);
+  TextTheme textTheme = displayTextTheme.copyWith(
+    bodyLarge: bodyTextTheme.bodyLarge,
+    bodyMedium: bodyTextTheme.bodyMedium,
+    bodySmall: bodyTextTheme.bodySmall,
+    labelLarge: bodyTextTheme.labelLarge,
+    labelMedium: bodyTextTheme.labelMedium,
+    labelSmall: bodyTextTheme.labelSmall,
+  );
+  return textTheme;
 }
